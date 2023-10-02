@@ -61,22 +61,22 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'core.urls'
 
 
-REST_FRAMEWORK = {
-    'DEFAULT_PARSER_CLASSES': (
-        'rest_framework.parsers.JSONParser',
-        'rest_framework.parsers.MultiPartParser',  # Enable multipart/form-data parsing
-    ),
-}
-
 # REST_FRAMEWORK = {
-#     'DEFAULT_PERMISSION_CLASSES': (
-#         'rest_framework.permissions.AllowAny',  # Adjust permissions as needed
-#     ),
 #     'DEFAULT_PARSER_CLASSES': (
-#         'rest_framework.parsers.MultiPartParser',  # For handling file uploads
 #         'rest_framework.parsers.JSONParser',
+#         'rest_framework.parsers.MultiPartParser',  # Enable multipart/form-data parsing
 #     ),
 # }
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.AllowAny',  # Adjust permissions as needed
+    ),
+    'DEFAULT_PARSER_CLASSES': (
+        'rest_framework.parsers.MultiPartParser',  # For handling file uploads
+        'rest_framework.parsers.JSONParser',
+    ),
+}
 
 
 
