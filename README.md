@@ -64,13 +64,13 @@ These instructions will help you set up and run the project on your local develo
 
 ### API Endpoints
 
-.   /api/start-recording/: Start a new recording session and generate a unique session ID.
+-   /api/start-recording/: Start a new recording session and generate a unique session ID.
 
-.   /api/receive-video-chunk/: Receive and store video data chunks sent by the frontend intermittently.
+-   /api/receive-video-chunk/: Receive and store video data chunks sent by the frontend intermittently.
 
-.   /api/finalize-recording/: Handle the final video chunk with a flag indicating the end of the recording. Process and save recorded data.
+-   /api/finalize-recording/: Handle the final video chunk with a flag indicating the end of the recording. Process and save recorded data.
 
-.   /api/get-recorded-data/<str:session_id>/: Retrieve and serve recorded video data for a specific session ID.
+-   /api/get-recorded-data/<str:session_id>/: Retrieve and serve recorded video data for a specific session ID.
 
 
 ## Recording Workflow
@@ -87,23 +87,23 @@ Retrieve the recorded data by making a GET request to /api/get-recorded-data/<se
 
 ## Configuration
 
-.   You can adjust various settings in the Django project's settings file (settings.py).
+-   You can adjust various settings in the Django project's settings file (settings.py).
 
-.   Customize the storage location for recorded data and extracted audio in the models.py and utils.py files.
+-   Customize the storage location for recorded data and extracted audio in the models.py and utils.py files.
 
 
 ## Dependencies
 
-.   Django: Web framework.
+-   Django: Web framework.
 
-.   Django REST framework: Toolkit for building Web APIs.
+-   Django REST framework: Toolkit for building Web APIs.
 
-.   moviepy: Python library for video editing.
+-   moviepy: Python library for video editing.
 
 
 ## Author
 
-.   Arinze Peter
+-   Arinze Peter
 
 
 ## License
