@@ -13,8 +13,6 @@ def process_and_save_recording(recording):
     recording.video_file.save(f"{recording.session_id}.mp4", ContentFile(recording.video_data))
 
 # Note: You may need to adjust the file name and storage location as needed.
-  
-  
 
 
 
