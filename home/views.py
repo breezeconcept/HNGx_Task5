@@ -1,110 +1,80 @@
-
+# videorecording/views.py
+import uuid
+from rest_framework import status
+from rest_framework.decorators import api_view, parser_classes, permission_classes
+from rest_framework.parsers import JSONParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from .models import RecordedVideo
 from .serializers import RecordedVideoSerializer
-from rest_framework import generics, status, serializers
-from rest_framework.parsers import MultiPartParser
-from rest_framework.response import Response
-import subprocess
+from .utils import process_and_save_recording, retrieve_recorded_data, extract_and_save_audio
 
+# Function to generate a unique session ID
+def generate_session_id():
+    return str(uuid.uuid4())
 
+@api_view(['POST'])
+@parser_classes([JSONParser])
+def start_recording(request):
+    # Generate a unique session ID
+    session_id = generate_session_id()
+    
+    # Create a new recording session
+    recording = RecordedVideo(session_id=session_id)
+    recording.save()
+    
+    return Response({'session_id': session_id}, status=status.HTTP_201_CREATED)
 
+@api_view(['POST'])
+@parser_classes([JSONParser])
+def receive_video_chunk(request):
+    session_id = request.data.get('session_id')
+    video_chunk = request.data.get('video_chunk')
+    
+    try:
+        recording = RecordedVideo.objects.get(session_id=session_id)
+        recording.video_data += video_chunk
+        recording.save()
+        return Response({'message': 'Video chunk received successfully.'}, status=status.HTTP_200_OK)
+    except RecordedVideo.DoesNotExist:
+        return Response({'message': 'Recording session not found.'}, status=status.HTTP_404_NOT_FOUND)
 
+@api_view(['POST'])
+@parser_classes([JSONParser])
+def finalize_recording(request):
+    session_id = request.data.get('session_id')
+    video_chunk = request.data.get('video_chunk')
+    is_final = request.data.get('is_final', False)
+    
+    try:
+        recording = RecordedVideo.objects.get(session_id=session_id)
+        recording.video_data += video_chunk
+        if is_final:
+            # Save the video data
+            recording.save()
+            
+            # Extract and save audio
+            video_path = recording.video_file.path
+            audio_path = 'path_to_save_extracted_audio.mp3'  # Specify your desired audio path
+            extract_and_save_audio(video_path, audio_path)
+            
+            # Process and save the recording (if needed)
+            process_and_save_recording(recording)  # Implement this function
+        else:
+            recording.save()
+        return Response({'message': 'Video chunk received successfully.'}, status=status.HTTP_200_OK)
+    except RecordedVideo.DoesNotExist:
+        return Response({'message': 'Recording session not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-class RecordedVideoListView(generics.ListAPIView):
-    queryset = RecordedVideo.objects.all()
-    serializer_class = RecordedVideoSerializer
-
-
-
-class RecordedVideoCreateView(generics.CreateAPIView):
-    serializer_class = RecordedVideoSerializer
-    parser_classes = (MultiPartParser,)
-
-    def perform_create(self, serializer):
-        # Extract transcript from request data (if provided)
-        transcript = self.request.data.get('transcript', '')
-
-        # Create the video instance without compression
-        instance = serializer.save()
-
-        # Save the transcript to the video record
-        instance.transcript = transcript
-        instance.save()
-
-
-
-# class RecordedVideoCreateView(generics.CreateAPIView):
-#     serializer_class = RecordedVideoSerializer
-#     parser_classes = (MultiPartParser,)
-
-#     def perform_create(self, serializer):
-#         # Extract transcript from request data (if provided)
-#         transcript = self.request.data.get('transcript', '')
-
-#         # Create the video instance without the transcript
-#         instance = serializer.save()
-
-#         # Perform the video compression in a separate method
-#         self.compress_video(instance, transcript)
-
-    # def compress_video(self, instance, transcript):
-    #     # Specify compression parameters to maintain quality (adjust as needed)
-    #     compression_params = ['-c:v', 'copy', '-c:a', 'copy']
-
-    #     # Compress the video without losing quality
-    #     input_path = instance.video_file.path
-    #     compressed_path = input_path.replace('.mp4', '_compressed.mp4')
-
-    #     # Construct the FFmpeg command for compression
-    #     ffmpeg_cmd = ['ffmpeg', '-i', input_path] + compression_params + [compressed_path]
-
-    #     # Run FFmpeg command for compression
-    #     try:
-    #         subprocess.run(ffmpeg_cmd, check=True)
-    #     except subprocess.CalledProcessError as e:
-    #         # Handle the compression error
-    #         instance.delete()  # Delete the record if compression fails
-    #         raise serializers.ValidationError({'message': 'Video compression failed: ' + str(e)})
-
-    #     # Update the video file path to the compressed file
-    #     instance.video_file.name = compressed_path.split('/')[-1]
-    #     instance.save()
-
-    #     # Save the transcript to the video record
-    #     instance.transcript = transcript
-    #     instance.save()
-
-
-
-class RecordedVideoDetailView(generics.RetrieveAPIView):
-    queryset = RecordedVideo.objects.all()
-    serializer_class = RecordedVideoSerializer
-
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-
-class RecordedVideoDeleteView(generics.DestroyAPIView):
-    queryset = RecordedVideo.objects.all()
-    serializer_class = RecordedVideoSerializer
-
-    def perform_destroy(self, instance):
-        instance.delete()
-
-
-
-class RecordedVideoUpdateView(generics.UpdateAPIView):
-    queryset = RecordedVideo.objects.all()
-    serializer_class = RecordedVideoSerializer
-
-    def update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({'message': 'Video updated successfully.'}, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_recorded_data(request, session_id):
+    try:
+        recording = RecordedVideo.objects.get(session_id=session_id)
+        
+        # Use the serializer to retrieve recorded data
+        serializer = RecordedVideoSerializer(recording)
+        
+        return Response({'recorded_data': serializer.data}, status=status.HTTP_200_OK)
+    except RecordedVideo.DoesNotExist:
+        return Response({'message': 'Recording session not found.'}, status=status.HTTP_404_NOT_FOUND)
