@@ -58,6 +58,7 @@ These instructions will help you set up and run the project on your local develo
     python manage.py runserver
 
 7.  Access the Swagger documentation at http://localhost:8000/swagger/ to explore the API endpoints.
+    This is the live link https://chrome-screen-recorder-api.onrender.com/swagger/
 
 
 ## Usage
